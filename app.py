@@ -1,54 +1,72 @@
 import streamlit as st
-from PIL import Image
-import time
+import tensorflow as tf
+from PIL import Image, ImageOps
+import numpy as np
 
-# Page Configuration
-st.set_page_config(page_title="AI Waste Classifier", page_icon="♻️")
-
-# Custom Styling
-st.markdown("""
-    <style>
-    .reportview-container { background: #f0f2f6; }
-    .main { text-align: center; }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.title("♻️ Automated Waste Classification System")
+# Page UI
+st.set_page_config(page_title="Smart Waste AI", page_icon="♻️")
+st.title("♻️ Automated Waste Classification")
 st.write("### Project by: Shiwali Singla")
 st.write("---")
 
-# File Uploader
-uploaded_file = st.file_uploader("Upload a photo of waste material...", type=["jpg", "png", "jpeg"])
+# Load Brain (MobileNetV2 AI Model)
+@st.cache_resource
+def load_my_model():
+    # 'imagenet' weights use karke model ko pehle se hi lakho cheezein pata hain
+    return tf.keras.applications.MobileNetV2(weights="imagenet")
 
-if uploaded_file is not None:
-    # Display Image
-    img = Image.open(uploaded_file)
-    st.image(img, caption='Image Uploaded Successfully', use_column_width=True)
-    
-    # Realistic Processing delay
-    with st.spinner('Analyzing Waste Material via Computer Vision...'):
-        time.sleep(2)
-    
-    st.success("✅ Analysis Complete!")
+model = load_my_model()
 
-    # Smart Logic for Demo (Based on Image Keywords)
-    img_name = uploaded_file.name.lower()
-    st.subheader("Classification Result:")
+# Classification Function
+def classify_waste(img, model):
+    size = (224, 224)    
+    image = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
+    image_array = np.asarray(image)
+    normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+    data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+    data[0] = normalized_image_array
     
-    # Logic for common items
-    bio_items = ['apple', 'banana', 'orange', 'leaf', 'paper', 'food', 'veg', 'peel', 'fruit']
-    is_bio = any(item in img_name for item in bio_items)
+    preds = model.predict(data)
+    # AI se top 3 predictions nikalna
+    decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=3)[0]
+    return decoded
+
+# Upload Section
+file = st.file_uploader("Show me the waste material...", type=["jpg", "png", "jpeg"])
+
+if file:
+    img = Image.open(file)
+    st.image(img, caption='Scanned Image', use_column_width=True)
+    
+    with st.spinner('AI Neural Network is analyzing...'):
+        results = classify_waste(img, model)
+        top_item = results[0][1].lower()
+
+    st.info(f"**AI thinks this is:** {top_item.replace('_', ' ')}")
+
+    # ---------------------------------------------------------
+    # SOLID LOGIC FOR BIO vs NON-BIO
+    # ---------------------------------------------------------
+    bio_list = [
+        'apple', 'banana', 'orange', 'lemon', 'corn', 'pineapple', 'fruit',
+        'paper', 'notebook', 'envelope', 'carton', 'packet', 'tissue', 'book',
+        'leaf', 'wood', 'tree', 'bread', 'food', 'vegetable', 'meat', 'grass'
+    ]
+    
+    # Check if the AI detection matches any Bio items
+    is_bio = any(word in top_item for word in bio_list)
 
     if is_bio:
-        st.info("🎯 **Detected Category: BIODEGRADABLE**")
-        st.write("♻️ **Action:** This is organic waste. It can be used for composting.")
+        st.success("🎯 **Result: BIODEGRADABLE**")
+        st.write("♻️ **Recommendation:** Can be composted or recycled as paper waste.")
     else:
-        st.error("🎯 **Detected Category: NON-BIODEGRADABLE**")
-        st.write("♻️ **Action:** This is inorganic waste. Please send it for recycling.")
+        st.error("🎯 **Result: NON-BIODEGRADABLE**")
+        st.write("🚫 **Recommendation:** Must be sent for industrial recycling (Plastic/Metal/Glass).")
 
-    # Visual Confidence Score
-    st.progress(94)
-    st.write("Model Confidence: 94.2%")
+    # Extra Details for Marks
+    with st.expander("See AI Confidence Score"):
+        for i, res in enumerate(results):
+            st.write(f"{i+1}. {res[1]}: {round(res[2]*100, 2)}%")
 
 st.write("---")
-st.caption("Note: This cloud version uses a lightweight vision logic. The full TensorFlow Deep Learning model is available in the GitHub repository.")
+st.caption("Developed for College Project Submission - Shiwali Singla")

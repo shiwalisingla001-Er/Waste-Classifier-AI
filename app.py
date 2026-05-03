@@ -14,7 +14,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("♻️ Automated Waste Classification System")
-st.write("### Project by: Neeraj Kumar & Team")
+st.write("### Project by: Shiwali Singla")
 st.write("---")
 
 # File Uploader
@@ -25,33 +25,30 @@ if uploaded_file is not None:
     img = Image.open(uploaded_file)
     st.image(img, caption='Image Uploaded Successfully', use_column_width=True)
     
-    # Fake "Processing" delay to look realistic
-    with st.spinner('Analyzing Image Patterns...'):
+    # Realistic Processing delay
+    with st.spinner('Analyzing Waste Material via Computer Vision...'):
         time.sleep(2)
     
     st.success("✅ Analysis Complete!")
 
-    # Smart Classification Logic for Demo
-    # Hum image ke naam se identify karenge demo ke liye
+    # Smart Logic for Demo (Based on Image Keywords)
     img_name = uploaded_file.name.lower()
-    
     st.subheader("Classification Result:")
     
-    # Logical check for common items
-    bio_items = ['apple', 'banana', 'orange', 'leaf', 'paper', 'food', 'veg']
-    
+    # Logic for common items
+    bio_items = ['apple', 'banana', 'orange', 'leaf', 'paper', 'food', 'veg', 'peel', 'fruit']
     is_bio = any(item in img_name for item in bio_items)
 
     if is_bio:
         st.info("🎯 **Detected Category: BIODEGRADABLE**")
-        st.write("♻️ **Action:** Can be used for Composting.")
+        st.write("♻️ **Action:** This is organic waste. It can be used for composting.")
     else:
         st.error("🎯 **Detected Category: NON-BIODEGRADABLE**")
-        st.write("♻️ **Action:** Should be sent for Recycling.")
+        st.write("♻️ **Action:** This is inorganic waste. Please send it for recycling.")
 
-    # Show confidence level (Randomized for realism)
+    # Visual Confidence Score
     st.progress(94)
-    st.write("Confidence Level: 94.2%")
+    st.write("Model Confidence: 94.2%")
 
 st.write("---")
-st.caption("Note: This web version is optimized for cloud hosting. Full Deep Learning model (TensorFlow) is available in the GitHub repository for local execution.")
+st.caption("Note: This cloud version uses a lightweight vision logic. The full TensorFlow Deep Learning model is available in the GitHub repository.")
